@@ -1,0 +1,310 @@
+﻿@model IEnumerable<KhoaNoiVuCNTT.Models.TaiLieu>
+
+@{
+    ViewData["Title"] = "Quản lý Tài Liệu";
+    var total = Model.Count();
+}
+
+<style>
+    body {
+        background: #f9fafb;
+    }
+
+    .stat-card {
+        border: none;
+        border-radius: 12px;
+        transition: .2s;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+    .table-container {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    .modal-content {
+        border-radius: 18px;
+        border: none;
+    }
+
+    .form-control {
+        border-radius: 10px;
+        padding: 10px;
+    }
+</style>
+
+<div class="container-fluid py-4 px-lg-5">
+
+    <!-- THỐNG KÊ -->
+    <div class="row g-4 mb-4">
+
+        <div class="col-md-3">
+            <div class="card stat-card shadow-sm bg-primary text-white">
+                <div class="card-body">
+                    <p class="mb-1 small opacity-75">Tổng tài liệu</p>
+                    <h3 class="fw-bold">@total</h3>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="card shadow-sm border-0 mb-4 px-3 py-3">
+
+        <div class="row align-items-center g-3">
+
+            <div class="col-lg-4">
+                <input type="text"
+                       id="searchInput"
+                       class="form-control"
+                       placeholder="Tìm tên tài liệu hoặc phân loại...">
+            </div>
+
+            <div class="col-lg-8 text-lg-end">
+
+                <button class="btn btn-outline-secondary me-2"
+                        onclick="window.print()">
+                    <i class="fas fa-print me-1"></i> In báo cáo
+                </button>
+
+                <button class="btn btn-success"
+                        onclick="openCreateModal()">
+                    <i class="fas fa-plus-circle me-1"></i> Thêm tài liệu
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-container shadow-sm border">
+
+        <table class="table table-hover align-middle mb-0" id="taiLieuTable">
+
+            <thead class="bg-light">
+
+                <tr>
+                    <th class="ps-4">Tên tài liệu</th>
+                    <th>Phân loại</th>
+                    <th>Ngày tải lên</th>
+                    <th class="text-center">Thao tác</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                @foreach (var item in Model)
+                {
+                    <tr>
+
+                        <td class="ps-4 fw-bold">
+                            @item.TenTaiLieu
+                        </td>
+
+                        <td>
+                            <span class="badge bg-primary">
+                                @item.PhanLoai
+                            </span>
+                        </td>
+
+                        <td>
+                            @item.NgayTaiLen?.ToString("dd/MM/yyyy")
+                        </td>
+
+                        <td class="text-center">
+
+                            <div class="btn-group">
+
+                                <button class="btn btn-sm btn-outline-info"
+                                        onclick="viewDetails('@item.MaTaiLieu')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+
+                                <button class="btn btn-sm btn-outline-warning"
+                                        onclick="openEditModal('@item.MaTaiLieu','@item.TenTaiLieu','@item.PhanLoai')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+
+                                <button class="btn btn-sm btn-outline-danger"
+                                        onclick="confirmDelete('@item.MaTaiLieu','@item.TenTaiLieu')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+                }
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+<!-- MODAL -->
+<div class="modal fade" id="taiLieuModal" tabindex="-1">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content shadow">
+
+            <div class="modal-header border-0">
+
+                <h5 class="modal-title fw-bold" id="modalTitle">
+                    Thêm Tài Liệu
+                </h5>
+
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+
+            </div>
+
+            <form id="taiLieuForm" method="post">
+
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" id="MaTaiLieu" name="MaTaiLieu">
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+                        <label>Tên tài liệu</label>
+                        <input type="text"
+                               id="TenTaiLieu"
+                               name="TenTaiLieu"
+                               class="form-control"
+                               required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Phân loại</label>
+                        <input type="text"
+                               id="PhanLoai"
+                               name="PhanLoai"
+                               class="form-control">
+                    </div>
+
+                </div>
+
+                <div class="modal-footer border-0">
+
+                    <button class="btn btn-light"
+                            data-bs-dismiss="modal">
+                        Đóng
+                    </button>
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        Lưu
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+@section Scripts {
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+
+        const modal = new bootstrap.Modal(document.getElementById('taiLieuModal'));
+        const form = document.getElementById('taiLieuForm');
+
+
+        // SEARCH
+        document.getElementById('searchInput').addEventListener('keyup', function() {
+
+        let val = this.value.toLowerCase();
+
+        document.querySelectorAll('#taiLieuTable tbody tr')
+        .forEach(row => {
+
+        row.style.display =
+        row.innerText.toLowerCase().includes(val)
+        ? ''
+        : 'none';
+
+        });
+
+        });
+
+
+        // CREATE
+        function openCreateModal() {
+
+        document.getElementById("modalTitle").innerHTML =
+        "<i class='fas fa-plus-circle text-success me-2'></i>Thêm Tài Liệu";
+
+        form.action = "/TaiLieu/Create";
+
+        form.reset();
+
+        modal.show();
+
+        }
+
+
+        // EDIT
+        function openEditModal(id, name, type) {
+
+        document.getElementById("modalTitle").innerHTML =
+        "<i class='fas fa-edit text-warning me-2'></i>Chỉnh sửa Tài Liệu";
+
+        form.action = "/TaiLieu/Edit/" + id;
+
+        document.getElementById("MaTaiLieu").value = id;
+        document.getElementById("TenTaiLieu").value = name;
+        document.getElementById("PhanLoai").value = type;
+
+        modal.show();
+
+        }
+
+
+        // DELETE
+        function confirmDelete(id, name) {
+
+        Swal.fire({
+        title: "Xóa tài liệu?",
+        text: "Bạn có chắc muốn xóa " + name + "?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        confirmButtonText: "Xóa",
+        cancelButtonText: "Hủy"
+        }).then((result) => {
+
+        if (result.isConfirmed) {
+
+        window.location =
+        "/TaiLieu/DeleteConfirmed/" + id;
+
+        }
+
+        });
+
+        }
+
+    </script>
+
+}
